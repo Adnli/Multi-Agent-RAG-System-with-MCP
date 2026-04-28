@@ -1,4 +1,5 @@
-/target/
+rag-service/target
+mcp-server/target
 .idea/
 *.iml
 .env

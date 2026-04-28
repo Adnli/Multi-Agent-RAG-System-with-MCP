@@ -1,0 +1,24 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: financial-mcp-server
+  ai:
+    mcp:
+      server:
+        name: financial-mcp-server
+        version: 1.0.0
+        type: SYNC
+        instructions: "Provides simulated financial market, news, filings, company facts, and sentiment tools."
+        capabilities:
+          tool: true
+          resource: false
+          prompt: false
+          completion: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

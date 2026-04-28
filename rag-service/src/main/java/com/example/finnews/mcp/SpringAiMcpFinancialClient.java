@@ -1,17 +1,22 @@
 package com.example.finnews.mcp;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 @Component
 public class SpringAiMcpFinancialClient implements FinancialMcpClient {
     private final SyncMcpToolCallbackProvider callbackProvider;
+    private final ObjectMapper objectMapper;
 
     public SpringAiMcpFinancialClient(SyncMcpToolCallbackProvider callbackProvider) {
         this.callbackProvider = callbackProvider;
+        this.objectMapper = new ObjectMapper();
     }
 
     @Override
@@ -46,15 +51,40 @@ public class SpringAiMcpFinancialClient implements FinancialMcpClient {
 
     @SuppressWarnings("unchecked")
     private Map<String, Object> invoke(String toolName, Map<String, Object> args) {
-        Object result = callbackProvider.getToolCallbacks().stream()
+        String input = toJson(args);
+        Object result = Arrays.stream(callbackProvider.getToolCallbacks())
                 .filter(callback -> callback.getToolDefinition().name().equals(toolName))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("MCP tool not found: " + toolName))
-                .call(args);
+                .call(input);
 
         if (result instanceof Map<?, ?> rawMap) {
             return (Map<String, Object>) rawMap;
         }
+        if (result instanceof String text) {
+            return fromJson(text);
+        }
         return new HashMap<>(Map.of("result", result));
+    }
+
+    private String toJson(Map<String, Object> args) {
+        try {
+            return objectMapper.writeValueAsString(args);
+        } catch (JsonProcessingException e) {
+            throw new IllegalArgumentException("Failed to serialize MCP tool arguments.", e);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> fromJson(String value) {
+        try {
+            Object parsed = objectMapper.readValue(value, Object.class);
+            if (parsed instanceof Map<?, ?> rawMap) {
+                return (Map<String, Object>) rawMap;
+            }
+            return new HashMap<>(Map.of("result", parsed));
+        } catch (JsonProcessingException e) {
+            return new HashMap<>(Map.of("result", value));
+        }
     }
 }

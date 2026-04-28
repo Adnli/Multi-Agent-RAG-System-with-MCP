@@ -5,8 +5,6 @@ import com.example.finnews.agent.MarketDataAgent;
 import com.example.finnews.agent.NewsAgent;
 import com.example.finnews.model.AnalysisRequest;
 import com.example.finnews.model.AnalysisResult;
-import com.example.finnews.model.MarketSnapshot;
-import com.example.finnews.model.NewsItem;
 import com.example.finnews.obs.AuditLogger;
 import com.example.finnews.obs.TelemetryCollector;
 import com.example.finnews.obs.TelemetryEvent;
@@ -18,6 +16,7 @@ import com.example.finnews.security.RateLimiter;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 public class FinancialNewsOrchestrator {
     private final MarketDataAgent marketDataAgent;
@@ -72,9 +71,10 @@ public class FinancialNewsOrchestrator {
 
         audit.log("request:user=" + request.userId() + ",symbol=" + request.symbol());
 
-        MarketSnapshot market = timeAgent("market-agent", () -> marketDataAgent.handle(request.symbol()));
-        List<NewsItem> news = timeAgent("news-agent", () -> newsAgent.handle(request.symbol()));
-        AnalysisResult result = timeAgent("analysis-agent", () -> analysisAgent.analyze(anonymized, market, news));
+        Map<String, Object> market = timeAgent("market-agent", () -> marketDataAgent.handle(request.symbol()));
+        Map<String, Object> news = timeAgent("news-agent", () -> newsAgent.handle(request.symbol()));
+        String analysisJson = timeAgent("analysis-agent",
+                () -> analysisAgent.analyze(request.symbol(), anonymized, market, news, List.of()));
 
         telemetry.record(new TelemetryEvent(
                 "orchestrator",
@@ -84,8 +84,15 @@ public class FinancialNewsOrchestrator {
                 true,
                 Instant.now()
         ));
-        audit.log("response:recommendation=" + result.recommendation());
-        return result;
+        audit.log("response:analysis=" + analysisJson);
+        return new AnalysisResult(
+                analysisJson,
+                "See JSON.recommendation",
+                0.75,
+                false,
+                List.of("https://example.org/rates", "https://example.org/earnings", "https://example.org/risk"),
+                List.of("Educational use only. Not investment advice.")
+        );
     }
 
     private <T> T timeAgent(String agent, AgentCall<T> call) {

@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://postgres:5432/finnews
-    username: finnews
-    password: finnews
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/finnews}
+    username: ${SPRING_DATASOURCE_USERNAME:finnews}
+    password: ${SPRING_DATASOURCE_PASSWORD:finnews}
   jpa:
     hibernate:
       ddl-auto: update
@@ -20,7 +20,7 @@ spring:
         sse:
           connections:
             financial:
-              url: ${MCP_SERVER_URL:http://financial-mcp-server:8081}
+              url: ${MCP_SERVER_URL:http://localhost:8081}
 
 management:
   endpoints:
