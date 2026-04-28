@@ -1,42 +1,53 @@
 package com.example.finnews.agent;
 
-import com.example.finnews.model.AnalysisResult;
-import com.example.finnews.model.KnowledgeDocument;
-import com.example.finnews.model.MarketSnapshot;
-import com.example.finnews.model.NewsItem;
-import com.example.finnews.rag.InMemoryKnowledgeBase;
+import com.example.finnews.model.KnowledgeChunk;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
+@Component
 public class AnalysisAgent {
-    private final InMemoryKnowledgeBase kb;
+    private final ChatClient chatClient;
 
-    public AnalysisAgent(InMemoryKnowledgeBase kb) {
-        this.kb = kb;
+    public AnalysisAgent(ChatClient.Builder chatClientBuilder) {
+        this.chatClient = chatClientBuilder.build();
     }
 
-    public AnalysisResult analyze(String question, MarketSnapshot market, List<NewsItem> news) {
-        List<KnowledgeDocument> context = kb.retrieve(question + " " + market.symbol(), 2);
-        List<String> citations = context.stream().map(KnowledgeDocument::sourceUrl).toList();
+    public String analyze(String ticker,
+                          String question,
+                          Map<String, Object> marketData,
+                          Map<String, Object> newsData,
+                          List<KnowledgeChunk> ragDocs) {
 
-        String trend = market.dayChangePercent() < -1 ? "short-term bearish pressure" : "neutral-to-bullish momentum";
-        String recommendation = market.dayChangePercent() < -2 ? "HOLD / WAIT FOR CONFIRMATION" : "WATCH FOR ENTRY";
-        double confidence = Math.max(0.25, 0.9 - Math.abs(market.dayChangePercent()) / 10.0);
+        String ragContext = ragDocs.stream()
+                .map(doc -> "- " + doc.getTitle() + " | " + doc.getContent() + " | source=" + doc.getSourceUrl())
+                .reduce("", (a, b) -> a + "\n" + b);
 
-        List<String> warnings = new ArrayList<>();
-        if (news.isEmpty()) {
-            warnings.add("No recent news found; decision quality reduced.");
-        }
-        boolean potentialHallucination = citations.isEmpty();
-        if (potentialHallucination) {
-            warnings.add("Low retrieval support; potential hallucination risk.");
-        }
+        return chatClient.prompt()
+                .system("You are a conservative financial analyst. Always mention uncertainty and risk.")
+                .user(u -> u.text("""
+                        Ticker: {ticker}
+                        User question: {question}
 
-        String summary = "Market for " + market.symbol() + " is showing " + trend +
-                "; latest price=" + market.price() + "% change=" + market.dayChangePercent() +
-                ". News signals considered: " + news.stream().map(NewsItem::headline).limit(2).toList();
+                        Market data from MCP tools:
+                        {market}
 
-        return new AnalysisResult(summary, recommendation, confidence, potentialHallucination, citations, warnings);
+                        News + filings + sentiment from MCP tools:
+                        {news}
+
+                        RAG context:
+                        {rag}
+
+                        Return concise JSON with keys: summary, recommendation, confidence, warnings.
+                        """)
+                        .param("ticker", ticker)
+                        .param("question", question)
+                        .param("market", marketData.toString())
+                        .param("news", newsData.toString())
+                        .param("rag", ragContext))
+                .call()
+                .content();
     }
 }

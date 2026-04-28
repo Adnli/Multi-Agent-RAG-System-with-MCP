@@ -1,3 +1,10 @@
 package com.example.finnews.model;
 
-public record AnalysisRequest(String userId, String role, String symbol, String userQuestion) {}
+import jakarta.validation.constraints.NotBlank;
+
+public record AnalysisRequest(
+        @NotBlank String userId,
+        @NotBlank String role,
+        @NotBlank String ticker,
+        @NotBlank String question
+) {}

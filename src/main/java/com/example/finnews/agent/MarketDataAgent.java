@@ -1,26 +1,25 @@
 package com.example.finnews.agent;
 
-import com.example.finnews.mcp.McpToolClient;
-import com.example.finnews.model.MarketSnapshot;
+import com.example.finnews.mcp.FinancialMcpClient;
+import org.springframework.stereotype.Component;
 
-import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Map;
 
-public class MarketDataAgent implements Agent<String, MarketSnapshot> {
-    private final McpToolClient mcp;
+@Component
+public class MarketDataAgent {
+    private final FinancialMcpClient mcp;
 
-    public MarketDataAgent(McpToolClient mcp) {
+    public MarketDataAgent(FinancialMcpClient mcp) {
         this.mcp = mcp;
     }
 
-    @Override
-    public MarketSnapshot handle(String symbol) {
-        Map<String, Object> result = mcp.callTool("market_data.get_quote", Map.of("symbol", symbol));
-        return new MarketSnapshot(
-                result.get("symbol").toString(),
-                Double.parseDouble(result.get("price").toString()),
-                Double.parseDouble(result.get("dayChangePercent").toString()),
-                Instant.parse(result.get("timestamp").toString())
+    public Map<String, Object> collect(String ticker) {
+        LocalDate to = LocalDate.now();
+        LocalDate from = to.minusDays(30);
+        return Map.of(
+                "quote", mcp.getStockQuote(ticker),
+                "dailyPrices", mcp.getDailyPrices(ticker, from.toString(), to.toString())
         );
     }
 }

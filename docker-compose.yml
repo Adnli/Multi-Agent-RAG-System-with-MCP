@@ -1,0 +1,46 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: finnews
+      POSTGRES_USER: finnews
+      POSTGRES_PASSWORD: finnews
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      MCP_SERVER_URL: ${MCP_SERVER_URL:-http://financial-mcp-server:8081}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/finnews
+      SPRING_DATASOURCE_USERNAME: finnews
+      SPRING_DATASOURCE_PASSWORD: finnews
+    depends_on:
+      - postgres
+    ports:
+      - "8080:8080"
+
+  financial-mcp-server:
+    image: ghcr.io/example/financial-mcp-server:latest
+    ports:
+      - "8081:8081"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      NEXT_PUBLIC_API_BASE: http://localhost:8080
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+
+volumes:
+  pgdata:
