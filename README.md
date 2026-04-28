@@ -9,7 +9,7 @@
 ## Архитектура
 
 ```text
-Agent Orchestrator (Spring Boot)
+FinancialNewsOrchestrator (Spring Boot)
    |
    +--> MarketDataAgent -----> MCP Client -----> financial-mcp-server -----> Alpha Vantage / Finnhub / SEC
    |
@@ -34,8 +34,8 @@ Orchestrator **не знает** детали внешних API, а вызыв�
 {
   "userId": "u-123",
   "role": "student",
-  "ticker": "NVDA",
-  "question": "Оцени риски и дай консервативный план"
+  "symbol": "NVDA",
+  "userQuestion": "Оцени риски и дай консервативный план"
 }
 ```
 

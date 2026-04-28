@@ -3,8 +3,8 @@
 import { useState } from "react";
 
 export default function Home() {
-  const [ticker, setTicker] = useState("NVDA");
-  const [question, setQuestion] = useState("Оцени риски и дай консервативную стратегию");
+  const [symbol, setSymbol] = useState("NVDA");
+  const [userQuestion, setUserQuestion] = useState("Оцени риски и дай консервативную стратегию");
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
 
@@ -14,7 +14,7 @@ export default function Home() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/api/v1/analysis`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: "demo-user", role: "student", ticker, question })
+        body: JSON.stringify({ userId: "demo-user", role: "student", symbol, userQuestion })
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setResult(await res.json());
@@ -27,9 +27,9 @@ export default function Home() {
     <main style={{ maxWidth: 900, margin: "40px auto", fontFamily: "Arial" }}>
       <h1>Financial News Analyst</h1>
       <p>Spring Boot + Spring AI MCP + PostgreSQL + Next.js</p>
-      <input value={ticker} onChange={e => setTicker(e.target.value)} placeholder="Ticker" />
+      <input value={symbol} onChange={e => setSymbol(e.target.value)} placeholder="Ticker" />
       <br /><br />
-      <textarea value={question} onChange={e => setQuestion(e.target.value)} rows={4} style={{ width: "100%" }} />
+      <textarea value={userQuestion} onChange={e => setUserQuestion(e.target.value)} rows={4} style={{ width: "100%" }} />
       <br /><br />
       <button onClick={submit}>Analyze</button>
 

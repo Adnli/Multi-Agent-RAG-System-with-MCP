@@ -5,6 +5,6 @@ import jakarta.validation.constraints.NotBlank;
 public record AnalysisRequest(
         @NotBlank String userId,
         @NotBlank String role,
-        @NotBlank String ticker,
-        @NotBlank String question
+        @NotBlank String symbol,
+        @NotBlank String userQuestion
 ) {}
