@@ -1,0 +1,29 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/finnews
+    username: finnews
+    password: finnews
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      chat:
+        options:
+          model: gpt-4.1-mini
+    mcp:
+      client:
+        enabled: true
+        name: finnews-orchestrator
+        sse:
+          connections:
+            financial:
+              url: ${MCP_SERVER_URL:http://financial-mcp-server:8081}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
