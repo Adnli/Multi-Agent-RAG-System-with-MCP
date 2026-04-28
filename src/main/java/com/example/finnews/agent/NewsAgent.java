@@ -13,6 +13,10 @@ public class NewsAgent {
         this.mcp = mcp;
     }
 
+    public Map<String, Object> handle(String ticker) {
+        return collect(ticker);
+    }
+
     public Map<String, Object> collect(String ticker) {
         return Map.of(
                 "news", mcp.getCompanyNews(ticker),

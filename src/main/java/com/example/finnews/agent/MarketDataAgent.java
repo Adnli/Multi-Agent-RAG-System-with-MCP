@@ -14,6 +14,10 @@ public class MarketDataAgent {
         this.mcp = mcp;
     }
 
+    public Map<String, Object> handle(String ticker) {
+        return collect(ticker);
+    }
+
     public Map<String, Object> collect(String ticker) {
         LocalDate to = LocalDate.now();
         LocalDate from = to.minusDays(30);

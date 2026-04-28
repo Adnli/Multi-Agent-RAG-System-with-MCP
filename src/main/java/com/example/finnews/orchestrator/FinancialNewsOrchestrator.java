@@ -61,11 +61,11 @@ public class FinancialNewsOrchestrator {
 
             List<KnowledgeChunk> docs = ragService.retrieve(request.symbol(), safeQuestion, 4);
 
-            Map<String, Object> market = marketDataAgent.collect(request.symbol());
+            Map<String, Object> market = marketDataAgent.handle(request.symbol());
             toolCalls.add("get_stock_quote");
             toolCalls.add("get_daily_prices");
 
-            Map<String, Object> news = newsAgent.collect(request.symbol());
+            Map<String, Object> news = newsAgent.handle(request.symbol());
             toolCalls.add("get_company_news");
             toolCalls.add("get_sec_filings");
             toolCalls.add("get_news_sentiment");
