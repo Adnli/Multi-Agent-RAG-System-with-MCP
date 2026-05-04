@@ -4,10 +4,14 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.Instant;
 
 @Entity
+@Getter
+@Setter
 public class AuditEvent {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,10 +30,4 @@ public class AuditEvent {
         event.detail = detail;
         return event;
     }
-
-    public Long getId() { return id; }
-    public Instant getCreatedAt() { return createdAt; }
-    public String getUserId() { return userId; }
-    public String getAction() { return action; }
-    public String getDetail() { return detail; }
 }

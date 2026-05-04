@@ -5,8 +5,12 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
+@Getter
+@Setter
 public class KnowledgeChunk {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -19,14 +23,4 @@ public class KnowledgeChunk {
     private String content;
 
     private String sourceUrl;
-
-    public Long getId() { return id; }
-    public String getTicker() { return ticker; }
-    public void setTicker(String ticker) { this.ticker = ticker; }
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
-    public String getContent() { return content; }
-    public void setContent(String content) { this.content = content; }
-    public String getSourceUrl() { return sourceUrl; }
-    public void setSourceUrl(String sourceUrl) { this.sourceUrl = sourceUrl; }
 }

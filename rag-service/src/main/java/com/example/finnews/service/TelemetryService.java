@@ -3,6 +3,7 @@ package com.example.finnews.service;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.Timer.Sample;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -25,7 +26,7 @@ public class TelemetryService {
         errorCounter.increment();
     }
 
-    public Timer.Sample startTimer() {
+    public Sample startTimer() {
         return Timer.start();
     }
 

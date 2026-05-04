@@ -12,7 +12,8 @@ import com.example.finnews.service.AuditEventRepository;
 import com.example.finnews.service.InputPolicyService;
 import com.example.finnews.service.RateLimitService;
 import com.example.finnews.service.TelemetryService;
-import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.Timer.Sample;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@RequiredArgsConstructor
 public class FinancialNewsOrchestrator {
     private final MarketDataAgent marketDataAgent;
     private final NewsAgent newsAgent;
@@ -30,31 +32,17 @@ public class FinancialNewsOrchestrator {
     private final TelemetryService telemetryService;
     private final AuditEventRepository auditEventRepository;
 
-    public FinancialNewsOrchestrator(MarketDataAgent marketDataAgent,
-                                     NewsAgent newsAgent,
-                                     AnalysisAgent analysisAgent,
-                                     RagService ragService,
-                                     InputPolicyService inputPolicyService,
-                                     RateLimitService rateLimitService,
-                                     TelemetryService telemetryService,
-                                     AuditEventRepository auditEventRepository) {
-        this.marketDataAgent = marketDataAgent;
-        this.newsAgent = newsAgent;
-        this.analysisAgent = analysisAgent;
-        this.ragService = ragService;
-        this.inputPolicyService = inputPolicyService;
-        this.rateLimitService = rateLimitService;
-        this.telemetryService = telemetryService;
-        this.auditEventRepository = auditEventRepository;
-    }
-
     public AnalysisResponse run(AnalysisRequest request) {
-        Timer.Sample timer = telemetryService.startTimer();
+
+        Sample timer = telemetryService.startTimer();
         List<String> toolCalls = new ArrayList<>();
         try {
+            //Валидация роли
             inputPolicyService.validateRole(request.role());
+            //Отслеживание кол-ва запросов от пользователя.
             rateLimitService.check(request.userId(), 10, 60);
 
+            //Форматирование запроса пользователя, удаление нецензурной лексики, анонимизация ПДн, проверка на запрещенный контент.
             String sanitized = inputPolicyService.sanitize(request.userQuestion());
             String safeQuestion = inputPolicyService.anonymizePii(sanitized);
             inputPolicyService.validateContent(safeQuestion);

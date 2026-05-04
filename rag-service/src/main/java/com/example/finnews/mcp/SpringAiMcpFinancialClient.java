@@ -2,6 +2,7 @@ package com.example.finnews.mcp;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
 import org.springframework.stereotype.Component;
 
@@ -10,14 +11,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Component
+@RequiredArgsConstructor
 public class SpringAiMcpFinancialClient implements FinancialMcpClient {
     private final SyncMcpToolCallbackProvider callbackProvider;
     private final ObjectMapper objectMapper;
-
-    public SpringAiMcpFinancialClient(SyncMcpToolCallbackProvider callbackProvider) {
-        this.callbackProvider = callbackProvider;
-        this.objectMapper = new ObjectMapper();
-    }
 
     @Override
     public Map<String, Object> getStockQuote(String ticker) {

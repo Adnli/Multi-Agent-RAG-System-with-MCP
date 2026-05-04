@@ -1,8 +1,11 @@
+server:
+  port: 8080
+
 spring:
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/finnews}
-    username: ${SPRING_DATASOURCE_USERNAME:finnews}
-    password: ${SPRING_DATASOURCE_PASSWORD:finnews}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/finnews}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:12345}
   jpa:
     hibernate:
       ddl-auto: update

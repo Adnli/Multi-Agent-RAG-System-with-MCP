@@ -1,6 +1,7 @@
 package com.example.finnews.rag;
 
 import com.example.finnews.model.KnowledgeChunk;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
@@ -9,12 +10,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class RagService {
     private final KnowledgeChunkRepository repository;
-
-    public RagService(KnowledgeChunkRepository repository) {
-        this.repository = repository;
-    }
 
     public List<KnowledgeChunk> retrieve(String ticker, String question, int topK) {
         Set<String> qTerms = tokenize(question + " " + ticker);
