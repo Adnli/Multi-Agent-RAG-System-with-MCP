@@ -3,10 +3,10 @@ services:
     image: postgres:16
     environment:
       POSTGRES_DB: finnews
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 12345
+      POSTGRES_USER: ${SPRING_DATASOURCE_USERNAME}
+      POSTGRES_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
     ports:
-      - "5433:5432"
+      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
 
@@ -20,7 +20,7 @@ services:
   backend:
     build:
       context: ./rag-service
-      dockerfile: Dockerfile.backend
+      dockerfile: Dockerfile
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       MCP_SERVER_URL: ${MCP_SERVER_URL}
@@ -38,7 +38,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     environment:
-      NEXT_PUBLIC_API_BASE: http://localhost:8080
+      NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE}
     depends_on:
       - backend
     ports:
