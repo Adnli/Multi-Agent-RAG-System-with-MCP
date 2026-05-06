@@ -65,7 +65,6 @@ public class FinancialNewsOrchestrator {
             toolCalls.add("get_news_sentiment");
 
             String llm = analysisAgent.analyze(request.symbol(), safeQuestion, market, news, docs);
-            log.info("LLM response: {}", llm);
             Map<String, Object> llmJson = objectMapper.readValue(llm, new TypeReference<>() {});
 
             auditEventRepository.save(AuditEvent.of(request.userId(), "analysis", "symbol=" + request.symbol()));
