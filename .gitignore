@@ -3,5 +3,6 @@ mcp-server/target
 .idea/
 *.iml
 .env
+frontend/.env.local
 frontend/.next/
 frontend/node_modules/
