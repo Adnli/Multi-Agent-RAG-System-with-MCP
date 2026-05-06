@@ -12,14 +12,19 @@ import com.example.finnews.service.AuditEventRepository;
 import com.example.finnews.service.InputPolicyService;
 import com.example.finnews.service.RateLimitService;
 import com.example.finnews.service.TelemetryService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.Timer.Sample;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FinancialNewsOrchestrator {
@@ -31,6 +36,7 @@ public class FinancialNewsOrchestrator {
     private final RateLimitService rateLimitService;
     private final TelemetryService telemetryService;
     private final AuditEventRepository auditEventRepository;
+    private final ObjectMapper objectMapper;
 
     public AnalysisResponse run(AnalysisRequest request) {
 
@@ -58,24 +64,26 @@ public class FinancialNewsOrchestrator {
             toolCalls.add("get_sec_filings");
             toolCalls.add("get_news_sentiment");
 
-            String llmJson = analysisAgent.analyze(request.symbol(), safeQuestion, market, news, docs);
-            List<String> citations = docs.stream().map(KnowledgeChunk::getSourceUrl).toList();
+            String llm = analysisAgent.analyze(request.symbol(), safeQuestion, market, news, docs);
+            log.info("LLM response: {}", llm);
+            Map<String, Object> llmJson = objectMapper.readValue(llm, new TypeReference<>() {});
 
             auditEventRepository.save(AuditEvent.of(request.userId(), "analysis", "symbol=" + request.symbol()));
             telemetryService.success();
 
             return new AnalysisResponse(
-                    llmJson,
-                    "See JSON.recommendation",
-                    0.75,
-                    citations,
+                    (String) llmJson.get("summary"),
+                    (String) llmJson.get("recommendations"),
+                    (double) llmJson.get("confidence"),
+                    objectMapper.convertValue(llmJson.get("citations"), new TypeReference<>() {}),
                     toolCalls,
-                    List.of("Educational use only. Not investment advice.")
-            );
+                    objectMapper.convertValue(llmJson.get("warnings"), new TypeReference<>() {}));
         } catch (RuntimeException e) {
             telemetryService.error();
             auditEventRepository.save(AuditEvent.of(request.userId(), "error", e.getMessage()));
             throw e;
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
         } finally {
             telemetryService.stop(timer);
         }
