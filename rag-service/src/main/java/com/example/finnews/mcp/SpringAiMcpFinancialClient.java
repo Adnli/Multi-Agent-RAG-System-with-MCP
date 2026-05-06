@@ -50,9 +50,17 @@ public class SpringAiMcpFinancialClient implements FinancialMcpClient {
     private Map<String, Object> invoke(String toolName, Map<String, Object> args) {
         String input = toJson(args);
         Object result = Arrays.stream(callbackProvider.getToolCallbacks())
-                .filter(callback -> callback.getToolDefinition().name().equals(toolName))
+                .filter(callback -> {
+                    String actualName = callback.getToolDefinition().name();
+                    return actualName.equals(toolName) || actualName.endsWith("_" + toolName);
+                })
                 .findFirst()
-                .orElseThrow(() -> new IllegalStateException("MCP tool not found: " + toolName))
+                .orElseThrow(() -> new IllegalStateException(
+                        "MCP tool not found: " + toolName + ". Available tools: " +
+                                Arrays.stream(callbackProvider.getToolCallbacks())
+                                        .map(callback -> callback.getToolDefinition().name())
+                                        .toList()
+                ))
                 .call(input);
 
         if (result instanceof Map<?, ?> rawMap) {
