@@ -13,15 +13,9 @@ public class MarketDataAgent {
     private final FinancialMcpClient mcp;
 
     public Map<String, Object> handle(String ticker) {
-        return collect(ticker);
-    }
-
-    public Map<String, Object> collect(String ticker) {
-        LocalDate to = LocalDate.now();
-        LocalDate from = to.minusDays(30);
         return Map.of(
-                "quote", mcp.getStockQuote(ticker),
-                "dailyPrices", mcp.getDailyPrices(ticker, from.toString(), to.toString())
+                "search", mcp.callTool("search_engine", Map.of("query", ticker + " stock price and latest market news", "engine", "google", "gl", "us", "hl", "en")),
+                "companySummary", mcp.callTool("web_data_yahoo_finance_business", Map.of("url", "https://finance.yahoo.com/quote/" + ticker + "/profile"))
         );
     }
 }

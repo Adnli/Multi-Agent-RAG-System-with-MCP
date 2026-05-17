@@ -24,9 +24,14 @@ spring:
           connections:
             financial:
               url: ${MCP_SERVER_URL}
+              sse-endpoint: /sse?token=${MCP_SERVER_TOKEN}&groups=advanced_scraping,finance
+        request-timeout: 240s
 
 management:
   endpoints:
     web:
       exposure:
         include: health,info,metrics,prometheus
+logging:
+  level:
+    io.modelcontextprotocol.spec.McpClientSession: OFF
