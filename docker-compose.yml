@@ -10,12 +10,26 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
-  financial-mcp-server:
-    build:
-      context: ./mcp-server
-      dockerfile: Dockerfile
+  redis:
+    image: redis:7
+    container_name: redis-local
     ports:
-      - "8081:8081"
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+
+  redisinsight:
+    image: redis/redisinsight:latest
+    container_name: redis-insight
+    ports:
+      - "5540:5540"
+    volumes:
+      - redisinsight-data:/data
+    depends_on:
+      - redis
+    restart: unless-stopped
 
   backend:
     build:
@@ -29,7 +43,6 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
     depends_on:
       - postgres
-      - financial-mcp-server
     ports:
       - "8080:8080"
 
@@ -46,3 +59,5 @@ services:
 
 volumes:
   pgdata:
+  redis-data:
+  redisinsight-data:
