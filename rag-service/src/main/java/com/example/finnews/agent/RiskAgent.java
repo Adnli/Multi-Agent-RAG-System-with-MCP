@@ -17,7 +17,7 @@ public class RiskAgent {
         String t = ticker.trim().toUpperCase();
 
         return mcp.callTool(
-                "search_engine_batch",
+                "search_engine_batch", ticker,
                 Map.of(
                         "queries", List.of(
                                 Map.of(

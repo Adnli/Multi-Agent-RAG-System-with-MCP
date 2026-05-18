@@ -13,7 +13,7 @@ public class MarketDataAgent {
 
     public Map<String, Object> handle(String ticker) {
         return Map.of("companySummary",
-                mcp.callTool("web_data_yahoo_finance_business", Map.of("url", "https://finance.yahoo.com/quote/" + ticker + "/profile")
+                mcp.callTool("web_data_yahoo_finance_business", ticker, Map.of("url", "https://finance.yahoo.com/quote/" + ticker + "/profile")
                 )
         );
     }

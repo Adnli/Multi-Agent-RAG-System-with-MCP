@@ -8,7 +8,7 @@ const starterPrompts = [
   "Сделай краткий анализ новостей и SEC filings"
 ];
 
-const tickerOptions = ["NVDA", "GLOBAL", "AAPL"];
+const tickerOptions = ["V", "AAPL", "AMZN", "MCD", "GLOBAL"];
 
 function AssistantMessage({ content }) {
   if (!content) {
@@ -68,7 +68,7 @@ function AssistantMessage({ content }) {
 }
 
 export default function Home() {
-  const [symbol, setSymbol] = useState("NVDA");
+  const [symbol, setSymbol] = useState("V");
   const [userQuestion, setUserQuestion] = useState("");
   const [messages, setMessages] = useState([
     {

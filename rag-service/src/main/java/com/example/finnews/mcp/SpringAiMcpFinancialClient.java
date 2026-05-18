@@ -25,9 +25,9 @@ public class SpringAiMcpFinancialClient implements FinancialMcpClient {
 
     @Override
     @SuppressWarnings("unchecked")
-    public Map<String, Object> callTool(String toolName, Map<String, Object> args) {
+    public Map<String, Object> callTool(String toolName, String ticker, Map<String, Object> args) {
         String input = toJson(args);
-        String cacheKey = cacheKey(toolName);
+        String cacheKey = cacheKey(toolName, ticker);
         Map<String, Object> cachedValue = getCachedValue(cacheKey);
         if (cachedValue != null) {
             return cachedValue;
@@ -94,7 +94,7 @@ public class SpringAiMcpFinancialClient implements FinancialMcpClient {
         redisTemplate.opsForValue().set(cacheKey, toJson(value), Duration.ofSeconds(cacheTtlSeconds));
     }
 
-    private String cacheKey(String toolName) {
-        return "mcp:tool:%s".formatted(toolName);
+    private String cacheKey(String toolName, String ticker) {
+        return "mcp:tool:%s:%s".formatted(toolName, ticker);
     }
 }

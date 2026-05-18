@@ -56,6 +56,7 @@ public class FinancialNewsOrchestrator {
             inputPolicyService.validateContent(safeQuestion);
 
             List<KnowledgeChunk> docs = ragService.retrieve(request.symbol(), safeQuestion, 4);
+            log.info("RAG data:{}", docs);
 
             log.info("Market data request: {}", request.symbol());
             Map<String, Object> market = marketDataAgent.handle(request.symbol());
@@ -81,7 +82,7 @@ public class FinancialNewsOrchestrator {
 
             return new AnalysisResponse(
                     (String) llmJson.get("summary"),
-                    (String) llmJson.get("recommendations"),
+                    (String) llmJson.get("recommendation"),
                     (double) llmJson.get("confidence"),
                     objectMapper.convertValue(llmJson.get("citations"), new TypeReference<>() {}),
                     toolCalls,

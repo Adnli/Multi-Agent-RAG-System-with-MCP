@@ -41,35 +41,54 @@ public class AnalysisAgent {
                 .reduce("", (a, b) -> a + "\n" + b);
 
         return Objects.requireNonNull(chatClient.prompt()
-                        .system("You are a conservative financial analyst. Always mention uncertainty and risk.")
+                        .system("""
+                You are a conservative financial analyst.
+                Always mention uncertainty and risk.
+
+                Citation rules:
+                - Use ONLY URLs that appear verbatim in the provided input.
+                - Never invent URLs.
+                - Never use example.com or placeholder links.
+                - If no reliable source URL is available, return an empty citations array.
+                """)
                         .user(u -> u.text("""
-                                        Ticker: {ticker}
-                                        User question: {question}
-                                        
-                                        Market data from MCP tools:
-                                        {market}
-                                        
-                                        News + filings + sentiment from MCP tools:
-                                        {news}
-                                        
-                                        Risks data from MCP tools:
-                                        {risks}
-                                        
-                                        RAG context:
-                                        {rag}
-                                        
-                                        Return clean JSON: summary, recommendation, confidence, citations, warnings
-                                        Where summary is a result. Recommendation is your recommendation. Confidence is a rate, example: 0.62. citations is a sources, example: https://example.com/smth. warnings is your warnings, example: ["Educational use only. Not investment advice."]
-                                        Answer in the language in which the question was asked.
-                                        """)
+                        Ticker: {ticker}
+                        User question: {question}
+
+                        Market data from MCP tools:
+                        {market}
+
+                        News data from MCP tools:
+                        {news}
+
+                        Risks data from MCP tools:
+                        {risks}
+
+                        RAG context:
+                        {rag}
+
+                        Return clean valid JSON with these exact fields:
+                        summary, recommendation, confidence, citations, warnings.
+
+                        Field requirements:
+                        summary: string.
+                        recommendation: string.
+                        confidence: number from 0.0 to 1.0.
+                        citations: array of exact URLs copied from the input only.
+                        warnings: array of strings.
+
+                        Answer in the language in which the question was asked.
+                        """)
                                 .param("ticker", ticker)
                                 .param("question", question)
                                 .param("market", marketData.toString())
                                 .param("news", newsData.toString())
                                 .param("rag", ragContext)
-                                .param("risks", risk))
+                                .param("risks", risk.toString()))
                         .call()
-                        .content()).trim().replaceFirst("^```json\\s*", "")
+                        .content())
+                .trim()
+                .replaceFirst("^```json\\s*", "")
                 .replaceFirst("^```\\s*", "")
                 .replaceFirst("\\s*```$", "")
                 .trim();
