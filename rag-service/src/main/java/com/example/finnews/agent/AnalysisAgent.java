@@ -1,5 +1,6 @@
 package com.example.finnews.agent;
 
+import com.example.finnews.model.KnowledgeChunk;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ai.chat.client.ChatClient;
@@ -22,7 +23,8 @@ public class AnalysisAgent {
                           String question,
                           Map<String, Object> marketData,
                           Map<String, Object> newsData,
-                          Map<String, Object> risk) {
+                          Map<String, Object> risk,
+                          java.util.List<KnowledgeChunk> ragContext) {
 
         return Objects.requireNonNull(chatClient.prompt()
                         .system("""
@@ -48,6 +50,11 @@ public class AnalysisAgent {
                         Risks data from MCP tools:
                         {risks}
 
+                        Retrieved context from internal knowledge base (RAG):
+                        {rag}
+
+                        Prioritize facts supported by this RAG context when relevant.
+
                         Return clean valid JSON with these exact fields:
                         summary, recommendation, confidence, citations, warnings.
 
@@ -64,7 +71,8 @@ public class AnalysisAgent {
                                 .param("question", question)
                                 .param("market", marketData.toString())
                                 .param("news", newsData.toString())
-                                .param("risks", risk.toString()))
+                                .param("risks", risk.toString())
+                                .param("rag", ragContext.toString()))
                         .call()
                         .content())
                 .trim()
