@@ -1,6 +1,7 @@
 package com.example.finnews.agent;
 
 import com.example.finnews.mcp.FinancialMcpClient;
+import com.example.finnews.model.CompanyProfile;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -11,15 +12,10 @@ import java.util.Map;
 public class NewsAgent {
     private final FinancialMcpClient mcp;
 
-    public Map<String, Object> handle(String ticker) {
-        return collect(ticker);
-    }
-
-    public Map<String, Object> collect(String ticker) {
-        return Map.of(
-                "news", mcp.getCompanyNews(ticker),
-                "filings", mcp.getSecFilings(ticker),
-                "sentiment", mcp.getNewsSentiment(ticker)
-        );
+    public Map<String, Object> handle(CompanyProfile company) {
+        return Map.of("search", mcp.callTool("search_engine", company.ticker(), Map.of(
+                "query", company.searchPrefix() + " latest financial news earnings guidance stock",
+                "engine", "google")
+        ));
     }
 }

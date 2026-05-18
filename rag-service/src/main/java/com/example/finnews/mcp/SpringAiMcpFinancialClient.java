@@ -4,8 +4,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -15,40 +18,21 @@ import java.util.Map;
 public class SpringAiMcpFinancialClient implements FinancialMcpClient {
     private final SyncMcpToolCallbackProvider callbackProvider;
     private final ObjectMapper objectMapper;
+    private final StringRedisTemplate redisTemplate;
+
+    @Value("${app.mcp.cache.ttl-seconds:300}")
+    private long cacheTtlSeconds;
 
     @Override
-    public Map<String, Object> getStockQuote(String ticker) {
-        return invoke("get_stock_quote", Map.of("ticker", ticker));
-    }
-
-    @Override
-    public Map<String, Object> getDailyPrices(String ticker, String from, String to) {
-        return invoke("get_daily_prices", Map.of("ticker", ticker, "from", from, "to", to));
-    }
-
-    @Override
-    public Map<String, Object> getCompanyNews(String ticker) {
-        return invoke("get_company_news", Map.of("ticker", ticker));
-    }
-
-    @Override
-    public Map<String, Object> getSecFilings(String ticker) {
-        return invoke("get_sec_filings", Map.of("ticker", ticker));
-    }
-
-    @Override
-    public Map<String, Object> getCompanyFacts(String cik) {
-        return invoke("get_company_facts", Map.of("cik", cik));
-    }
-
-    @Override
-    public Map<String, Object> getNewsSentiment(String ticker) {
-        return invoke("get_news_sentiment", Map.of("ticker", ticker));
-    }
-
     @SuppressWarnings("unchecked")
-    private Map<String, Object> invoke(String toolName, Map<String, Object> args) {
+    public Map<String, Object> callTool(String toolName, String ticker, Map<String, Object> args) {
         String input = toJson(args);
+        String cacheKey = cacheKey(toolName, ticker);
+        Map<String, Object> cachedValue = getCachedValue(cacheKey);
+        if (cachedValue != null) {
+            return cachedValue;
+        }
+
         Object result = Arrays.stream(callbackProvider.getToolCallbacks())
                 .filter(callback -> {
                     String actualName = callback.getToolDefinition().name();
@@ -62,14 +46,19 @@ public class SpringAiMcpFinancialClient implements FinancialMcpClient {
                                         .toList()
                 ))
                 .call(input);
+        Map<String, Object> normalizedResult;
 
         if (result instanceof Map<?, ?> rawMap) {
-            return (Map<String, Object>) rawMap;
+            normalizedResult = (Map<String, Object>) rawMap;
+        } else if (result instanceof String text) {
+            normalizedResult = fromJson(text);
+        } else {
+            normalizedResult = new HashMap<>(Map.of("result", result));
         }
-        if (result instanceof String text) {
-            return fromJson(text);
+        if(toolName.equals("web_data_yahoo_finance_business")){
+            cacheValue(cacheKey, normalizedResult);
         }
-        return new HashMap<>(Map.of("result", result));
+        return normalizedResult;
     }
 
     private String toJson(Map<String, Object> args) {
@@ -91,5 +80,21 @@ public class SpringAiMcpFinancialClient implements FinancialMcpClient {
         } catch (JsonProcessingException e) {
             return new HashMap<>(Map.of("result", value));
         }
+    }
+
+    private Map<String, Object> getCachedValue(String cacheKey) {
+        String cachedJson = redisTemplate.opsForValue().get(cacheKey);
+        if (cachedJson == null || cachedJson.isBlank()) {
+            return null;
+        }
+        return fromJson(cachedJson);
+    }
+
+    private void cacheValue(String cacheKey, Map<String, Object> value) {
+        redisTemplate.opsForValue().set(cacheKey, toJson(value), Duration.ofSeconds(cacheTtlSeconds));
+    }
+
+    private String cacheKey(String toolName, String ticker) {
+        return "mcp:tool:%s:%s".formatted(toolName, ticker);
     }
 }
