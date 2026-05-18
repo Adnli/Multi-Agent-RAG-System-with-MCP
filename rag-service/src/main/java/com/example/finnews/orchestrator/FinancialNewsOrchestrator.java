@@ -11,6 +11,7 @@ import com.example.finnews.service.AuditEventRepository;
 import com.example.finnews.service.InputPolicyService;
 import com.example.finnews.service.RateLimitService;
 import com.example.finnews.service.TelemetryService;
+import com.example.finnews.service.RagKnowledgeService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -36,6 +37,7 @@ public class FinancialNewsOrchestrator {
     private final TelemetryService telemetryService;
     private final AuditEventRepository auditEventRepository;
     private final ObjectMapper objectMapper;
+    private final RagKnowledgeService ragKnowledgeService;
 
     public AnalysisResponse run(AnalysisRequest request) {
 
@@ -61,13 +63,17 @@ public class FinancialNewsOrchestrator {
             Map<String, Object> news = newsAgent.handle(request.symbol());
             toolCalls.add("search_engine");
             log.info("News retrieved for symbol {}: {}", request.symbol(), news);
+            ragKnowledgeService.ingestSearchResults(request.symbol(), news);
 
             log.info("Risk request: {}", request.symbol());
             Map<String, Object> risk = riskAgent.handle(request.symbol());
             toolCalls.add("search_engine_batch");
             log.info("Risk retrieved for symbol {}: {}", request.symbol(), risk);
+            ragKnowledgeService.ingestSearchResults(request.symbol(), risk);
 
-            String llm = analysisAgent.analyze(request.symbol(), safeQuestion, market, news, risk);
+            var retrievedChunks = ragKnowledgeService.retrieveTopChunks(request.symbol(), safeQuestion, 5);
+
+            String llm = analysisAgent.analyze(request.symbol(), safeQuestion, market, news, risk, retrievedChunks);
             log.info("result of llm:{}", llm);
             Map<String, Object> llmJson = objectMapper.readValue(llm, new TypeReference<>() {});
 
