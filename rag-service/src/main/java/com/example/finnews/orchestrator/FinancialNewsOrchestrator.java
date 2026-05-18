@@ -7,8 +7,6 @@ import com.example.finnews.agent.RiskAgent;
 import com.example.finnews.model.AnalysisRequest;
 import com.example.finnews.model.AnalysisResponse;
 import com.example.finnews.model.AuditEvent;
-import com.example.finnews.model.KnowledgeChunk;
-import com.example.finnews.rag.RagService;
 import com.example.finnews.service.AuditEventRepository;
 import com.example.finnews.service.InputPolicyService;
 import com.example.finnews.service.RateLimitService;
@@ -33,7 +31,6 @@ public class FinancialNewsOrchestrator {
     private final NewsAgent newsAgent;
     private final RiskAgent riskAgent;
     private final AnalysisAgent analysisAgent;
-    private final RagService ragService;
     private final InputPolicyService inputPolicyService;
     private final RateLimitService rateLimitService;
     private final TelemetryService telemetryService;
@@ -55,9 +52,6 @@ public class FinancialNewsOrchestrator {
             String safeQuestion = inputPolicyService.anonymizePii(sanitized);
             inputPolicyService.validateContent(safeQuestion);
 
-            List<KnowledgeChunk> docs = ragService.retrieve(request.symbol(), safeQuestion, 4);
-            log.info("RAG data:{}", docs);
-
             log.info("Market data request: {}", request.symbol());
             Map<String, Object> market = marketDataAgent.handle(request.symbol());
             toolCalls.add("web_data_yahoo_finance_business");
@@ -73,7 +67,7 @@ public class FinancialNewsOrchestrator {
             toolCalls.add("search_engine_batch");
             log.info("Risk retrieved for symbol {}: {}", request.symbol(), risk);
 
-            String llm = analysisAgent.analyze(request.symbol(), safeQuestion, market, news, docs, risk);
+            String llm = analysisAgent.analyze(request.symbol(), safeQuestion, market, news, risk);
             log.info("result of llm:{}", llm);
             Map<String, Object> llmJson = objectMapper.readValue(llm, new TypeReference<>() {});
 
