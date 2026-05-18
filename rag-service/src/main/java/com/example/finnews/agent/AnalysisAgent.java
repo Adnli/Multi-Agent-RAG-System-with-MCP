@@ -30,7 +30,8 @@ public class AnalysisAgent {
                           String question,
                           Map<String, Object> marketData,
                           Map<String, Object> newsData,
-                          List<KnowledgeChunk> ragDocs) {
+                          List<KnowledgeChunk> ragDocs,
+                          Map<String, Object> risk) {
         if (chatClient == null) {
             return analyzeWithoutLlm(ticker, question);
         }
@@ -51,6 +52,9 @@ public class AnalysisAgent {
                                         News + filings + sentiment from MCP tools:
                                         {news}
                                         
+                                        Risks data from MCP tools:
+                                        {risks}
+                                        
                                         RAG context:
                                         {rag}
                                         
@@ -62,7 +66,8 @@ public class AnalysisAgent {
                                 .param("question", question)
                                 .param("market", marketData.toString())
                                 .param("news", newsData.toString())
-                                .param("rag", ragContext))
+                                .param("rag", ragContext)
+                                .param("risks", risk))
                         .call()
                         .content()).trim().replaceFirst("^```json\\s*", "")
                 .replaceFirst("^```\\s*", "")

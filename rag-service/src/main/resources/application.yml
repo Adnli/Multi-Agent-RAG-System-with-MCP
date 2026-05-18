@@ -4,6 +4,8 @@ server:
 spring:
   data:
     redis:
+      repositories:
+        enabled: false
       host: ${REDIS_HOST}
       port: 6379
   datasource:
@@ -29,13 +31,19 @@ spring:
             financial:
               url: ${MCP_SERVER_URL}
               sse-endpoint: /sse?token=${MCP_SERVER_TOKEN}&groups=advanced_scraping,finance
-        request-timeout: 240s
+        request-timeout: 1000s
 
 management:
   endpoints:
     web:
       exposure:
         include: health,info,metrics,prometheus
+
 logging:
   level:
     io.modelcontextprotocol.spec.McpClientSession: OFF
+
+app:
+  mcp:
+    cache:
+      ttl-seconds: 86400

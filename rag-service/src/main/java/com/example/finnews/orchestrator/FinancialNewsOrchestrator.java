@@ -3,6 +3,7 @@ package com.example.finnews.orchestrator;
 import com.example.finnews.agent.AnalysisAgent;
 import com.example.finnews.agent.MarketDataAgent;
 import com.example.finnews.agent.NewsAgent;
+import com.example.finnews.agent.RiskAgent;
 import com.example.finnews.model.AnalysisRequest;
 import com.example.finnews.model.AnalysisResponse;
 import com.example.finnews.model.AuditEvent;
@@ -30,6 +31,7 @@ import java.util.Map;
 public class FinancialNewsOrchestrator {
     private final MarketDataAgent marketDataAgent;
     private final NewsAgent newsAgent;
+    private final RiskAgent riskAgent;
     private final AnalysisAgent analysisAgent;
     private final RagService ragService;
     private final InputPolicyService inputPolicyService;
@@ -65,7 +67,12 @@ public class FinancialNewsOrchestrator {
             toolCalls.add("search_engine");
             log.info("News retrieved for symbol {}: {}", request.symbol(), news);
 
-            String llm = analysisAgent.analyze(request.symbol(), safeQuestion, market, news, docs);
+            log.info("Risk request: {}", request.symbol());
+            Map<String, Object> risk = riskAgent.handle(request.symbol());
+            toolCalls.add("search_engine_batch");
+            log.info("Risk retrieved for symbol {}: {}", request.symbol(), risk);
+
+            String llm = analysisAgent.analyze(request.symbol(), safeQuestion, market, news, docs, risk);
             log.info("result of llm:{}", llm);
             Map<String, Object> llmJson = objectMapper.readValue(llm, new TypeReference<>() {});
 
