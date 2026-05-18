@@ -1,5 +1,4 @@
 # Multi-Agent RAG Financial News Analyst
-
 A Spring Boot financial analysis service built with multiple AI agents, Spring AI, the external Bright Data MCP server, PostgreSQL-backed RAG, Redis caching, and a Next.js frontend.
 
 ## Stack
