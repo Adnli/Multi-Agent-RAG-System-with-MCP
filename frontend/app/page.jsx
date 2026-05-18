@@ -8,7 +8,7 @@ const starterPrompts = [
   "Сделай краткий анализ новостей и SEC filings"
 ];
 
-const tickerOptions = ["V", "AAPL", "AMZN", "MCD", "GLOBAL"];
+const tickerOptions = ["V", "AAPL", "AMZN", "MCD"];
 
 function AssistantMessage({ content }) {
   if (!content) {

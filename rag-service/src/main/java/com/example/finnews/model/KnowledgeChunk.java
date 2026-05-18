@@ -18,6 +18,7 @@ public class KnowledgeChunk {
     private Long id;
 
     private String ticker;
+    private String companyName;
     private String title;
     private String sourceType;
     private String sourceName;

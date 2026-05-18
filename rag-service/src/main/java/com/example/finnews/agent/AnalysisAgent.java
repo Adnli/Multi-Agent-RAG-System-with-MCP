@@ -1,6 +1,7 @@
 package com.example.finnews.agent;
 
 import com.example.finnews.model.KnowledgeChunk;
+import com.example.finnews.model.CompanyProfile;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ai.chat.client.ChatClient;
@@ -20,7 +21,7 @@ public class AnalysisAgent {
         this.chatClient = chatClientBuilder.build();
     }
 
-    public String analyze(String ticker,
+    public String analyze(CompanyProfile company,
                           String question,
                           Map<String, Object> marketData,
                           Map<String, Object> newsData,
@@ -56,6 +57,7 @@ public class AnalysisAgent {
                 """)
                         .user(u -> u.text("""
                         Ticker: {ticker}
+                        Company: {company}
                         User question: {question}
 
                         Market data from MCP tools:
@@ -82,9 +84,10 @@ public class AnalysisAgent {
                         citations: array of exact URLs copied from the input only.
                         warnings: array of strings.
 
-                        Answer in the language in which the question was asked.
+                        Must answer in the language in which the question was asked.
                         """)
-                                .param("ticker", ticker)
+                                .param("ticker", company.ticker())
+                                .param("company", company.companyName())
                                 .param("question", question)
                                 .param("market", marketData.toString())
                                 .param("news", newsData.toString())

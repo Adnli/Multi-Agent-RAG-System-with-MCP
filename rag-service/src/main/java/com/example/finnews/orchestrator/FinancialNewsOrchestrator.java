@@ -8,6 +8,7 @@ import com.example.finnews.model.AnalysisRequest;
 import com.example.finnews.model.AnalysisResponse;
 import com.example.finnews.model.AuditEvent;
 import com.example.finnews.service.AuditEventRepository;
+import com.example.finnews.service.CompanyProfileResolver;
 import com.example.finnews.service.InputPolicyService;
 import com.example.finnews.service.RateLimitService;
 import com.example.finnews.service.TelemetryService;
@@ -38,6 +39,7 @@ public class FinancialNewsOrchestrator {
     private final AuditEventRepository auditEventRepository;
     private final ObjectMapper objectMapper;
     private final RagKnowledgeService ragKnowledgeService;
+    private final CompanyProfileResolver companyProfileResolver;
 
     public AnalysisResponse run(AnalysisRequest request) {
 
@@ -53,36 +55,37 @@ public class FinancialNewsOrchestrator {
             String sanitized = inputPolicyService.sanitize(request.userQuestion());
             String safeQuestion = inputPolicyService.anonymizePii(sanitized);
             inputPolicyService.validateContent(safeQuestion);
+            var company = companyProfileResolver.resolve(request.symbol());
 
-            var retrievedChunks = ragKnowledgeService.retrieveTopChunks(request.symbol(), safeQuestion, 5);
-            log.info("Retrieved {} RAG chunks for symbol {}", retrievedChunks.size(), request.symbol());
+            var retrievedChunks = ragKnowledgeService.retrieveTopChunks(company, safeQuestion, 5);
+            log.info("Retrieved {} RAG chunks for {}", retrievedChunks.size(), company.displayName());
 
-            log.info("Market data request: {}", request.symbol());
-            Map<String, Object> market = marketDataAgent.handle(request.symbol());
+            log.info("Market data request: {}", company.displayName());
+            Map<String, Object> market = marketDataAgent.handle(company);
             toolCalls.add("web_data_yahoo_finance_business");
-            log.info("Market data retrieved for symbol {}: {}", request.symbol(), market);
+            log.info("Market data retrieved for {}: {}", company.displayName(), market);
 
-            log.info("News request: {}", request.symbol());
-            Map<String, Object> news = newsAgent.handle(request.symbol());
+            log.info("News request: {}", company.displayName());
+            Map<String, Object> news = newsAgent.handle(company);
             toolCalls.add("search_engine");
-            log.info("News retrieved for symbol {}: {}", request.symbol(), news);
+            log.info("News retrieved for {}: {}", company.displayName(), news);
             int storedNewsChunks = ragKnowledgeService.ingestSearchResults(
-                    request.symbol(), news, "brightdata-mcp", "search_engine");
+                    company, news, "brightdata-mcp", "search_engine");
             log.info("Stored {} new news chunks for future RAG retrieval", storedNewsChunks);
 
-            log.info("Risk request: {}", request.symbol());
-            Map<String, Object> risk = riskAgent.handle(request.symbol());
+            log.info("Risk request: {}", company.displayName());
+            Map<String, Object> risk = riskAgent.handle(company);
             toolCalls.add("search_engine_batch");
-            log.info("Risk retrieved for symbol {}: {}", request.symbol(), risk);
+            log.info("Risk retrieved for {}: {}", company.displayName(), risk);
             int storedRiskChunks = ragKnowledgeService.ingestSearchResults(
-                    request.symbol(), risk, "brightdata-mcp", "search_engine_batch");
+                    company, risk, "brightdata-mcp", "search_engine_batch");
             log.info("Stored {} new risk chunks for future RAG retrieval", storedRiskChunks);
 
-            String llm = analysisAgent.analyze(request.symbol(), safeQuestion, market, news, risk, retrievedChunks);
+            String llm = analysisAgent.analyze(company, safeQuestion, market, news, risk, retrievedChunks);
             log.info("result of llm:{}", llm);
             Map<String, Object> llmJson = objectMapper.readValue(llm, new TypeReference<>() {});
 
-            auditEventRepository.save(AuditEvent.of(request.userId(), "analysis", "symbol=" + request.symbol()));
+            auditEventRepository.save(AuditEvent.of(request.userId(), "analysis", "symbol=" + company.ticker()));
             telemetryService.success();
 
             return new AnalysisResponse(

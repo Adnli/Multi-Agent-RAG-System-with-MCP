@@ -1,6 +1,7 @@
 package com.example.finnews.agent;
 
 import com.example.finnews.mcp.FinancialMcpClient;
+import com.example.finnews.model.CompanyProfile;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -13,27 +14,27 @@ public class RiskAgent {
 
     private final FinancialMcpClient mcp;
 
-    public Map<String, Object> handle(String ticker) {
-        String t = ticker.trim().toUpperCase();
+    public Map<String, Object> handle(CompanyProfile company) {
+        String queryPrefix = company.searchPrefix();
 
         return mcp.callTool(
-                "search_engine_batch", ticker,
+                "search_engine_batch", company.ticker(),
                 Map.of(
                         "queries", List.of(
                                 Map.of(
-                                        "query", t + " risk factors SEC filing 10-K 10-Q",
+                                        "query", queryPrefix + " risk factors SEC filing 10-K 10-Q",
                                         "engine", "google"
                                 ),
                                 Map.of(
-                                        "query", t + " lawsuit regulatory investigation antitrust",
+                                        "query", queryPrefix + " lawsuit regulatory investigation antitrust",
                                         "engine", "google"
                                 ),
                                 Map.of(
-                                        "query", t + " analyst downgrade guidance cut margin pressure",
+                                        "query", queryPrefix + " analyst downgrade guidance cut margin pressure",
                                         "engine", "google"
                                 ),
                                 Map.of(
-                                        "query", t + " supply chain risk competition macroeconomic risk",
+                                        "query", queryPrefix + " supply chain risk competition macroeconomic risk",
                                         "engine", "google"
                                 )
                         )

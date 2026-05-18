@@ -1,5 +1,6 @@
 package com.example.finnews.service;
 
+import com.example.finnews.model.CompanyProfile;
 import com.example.finnews.model.KnowledgeChunk;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -36,12 +37,12 @@ public class RagKnowledgeService {
     private final KnowledgeChunkRepository knowledgeChunkRepository;
     private final ObjectMapper objectMapper;
 
-    public int ingestSearchResults(String ticker, Map<String, Object> payload, String mcpServerName, String toolName) {
+    public int ingestSearchResults(CompanyProfile company, Map<String, Object> payload, String mcpServerName, String toolName) {
         log.info("RAG ingest from MCP server={}, tool={}, symbol={}, payload={}",
-                mcpServerName, toolName, ticker, payload);
-        String normalizedTicker = normalizeTicker(ticker);
+                mcpServerName, toolName, company.displayName(), payload);
+        String normalizedTicker = company.ticker();
         List<Map<String, String>> rows = extractOrganic(payload);
-        log.info("Extracted {} source rows for {} from tool {}", rows.size(), ticker, toolName);
+        log.info("Extracted {} source rows for {} from tool {}", rows.size(), company.displayName(), toolName);
         int stored = 0;
         for (Map<String, String> row : rows) {
             String title = row.getOrDefault("title", "");
@@ -53,12 +54,13 @@ public class RagKnowledgeService {
             String contentKey = contentKey(normalizedTicker, link);
             KnowledgeChunk existingChunk = knowledgeChunkRepository.findByContentKey(contentKey).orElse(null);
             if (existingChunk != null) {
-                refreshExistingChunk(existingChunk, row, title, description, link, mcpServerName, toolName);
+                refreshExistingChunk(existingChunk, company, row, title, description, link, mcpServerName, toolName);
                 continue;
             }
 
             KnowledgeChunk chunk = new KnowledgeChunk();
             chunk.setTicker(normalizedTicker);
+            chunk.setCompanyName(company.companyName());
             chunk.setTitle(truncate(title, 500));
             chunk.setContent(truncate(description, 4500));
             chunk.setSourceUrl(link);
@@ -75,9 +77,9 @@ public class RagKnowledgeService {
         return stored;
     }
 
-    public List<KnowledgeChunk> retrieveTopChunks(String ticker, String question, int limit) {
-        String normalizedTicker = normalizeTicker(ticker);
-        List<String> queryTokens = tokenize(normalizedTicker + " " + Objects.toString(question, ""));
+    public List<KnowledgeChunk> retrieveTopChunks(CompanyProfile company, String question, int limit) {
+        String normalizedTicker = company.ticker();
+        List<String> queryTokens = tokenize(company.searchPrefix() + " " + Objects.toString(question, ""));
         if (normalizedTicker.isBlank()) {
             return List.of();
         }
@@ -110,6 +112,7 @@ public class RagKnowledgeService {
 
     private int score(KnowledgeChunk chunk, List<String> queryTokens) {
         List<String> docTokens = tokenize(chunk.getTicker()
+                + " " + Objects.toString(chunk.getCompanyName(), "")
                 + " " + chunk.getTitle()
                 + " " + chunk.getContent()
                 + " " + Objects.toString(chunk.getQueryText(), ""));
@@ -230,12 +233,14 @@ public class RagKnowledgeService {
     }
 
     private void refreshExistingChunk(KnowledgeChunk chunk,
+                                      CompanyProfile company,
                                       Map<String, String> row,
                                       String title,
                                       String description,
                                       String link,
                                       String mcpServerName,
                                       String toolName) {
+        chunk.setCompanyName(company.companyName());
         chunk.setTitle(truncate(title, 500));
         chunk.setContent(truncate(description, 4500));
         chunk.setSourceUrl(link);
