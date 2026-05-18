@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -25,6 +26,22 @@ public class AnalysisAgent {
                           Map<String, Object> newsData,
                           Map<String, Object> risk,
                           java.util.List<KnowledgeChunk> ragContext) {
+        String formattedRagContext = ragContext.stream()
+                .map(chunk -> """
+                        - title: %s
+                          content: %s
+                          source: %s
+                          mcpServer: %s
+                          mcpTool: %s
+                          dataProvider: %s
+                        """.formatted(
+                        Objects.toString(chunk.getTitle(), ""),
+                        Objects.toString(chunk.getContent(), ""),
+                        Objects.toString(chunk.getSourceUrl(), ""),
+                        Objects.toString(chunk.getSourceName(), ""),
+                        Objects.toString(chunk.getMcpToolName(), ""),
+                        Objects.toString(chunk.getDataProvider(), "")))
+                .collect(Collectors.joining("\n"));
 
         return Objects.requireNonNull(chatClient.prompt()
                         .system("""
@@ -72,7 +89,7 @@ public class AnalysisAgent {
                                 .param("market", marketData.toString())
                                 .param("news", newsData.toString())
                                 .param("risks", risk.toString())
-                                .param("rag", ragContext.toString()))
+                                .param("rag", formattedRagContext))
                         .call()
                         .content())
                 .trim()

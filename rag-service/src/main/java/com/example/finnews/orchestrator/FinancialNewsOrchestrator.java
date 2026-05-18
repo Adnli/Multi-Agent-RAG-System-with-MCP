@@ -54,6 +54,9 @@ public class FinancialNewsOrchestrator {
             String safeQuestion = inputPolicyService.anonymizePii(sanitized);
             inputPolicyService.validateContent(safeQuestion);
 
+            var retrievedChunks = ragKnowledgeService.retrieveTopChunks(request.symbol(), safeQuestion, 5);
+            log.info("Retrieved {} RAG chunks for symbol {}", retrievedChunks.size(), request.symbol());
+
             log.info("Market data request: {}", request.symbol());
             Map<String, Object> market = marketDataAgent.handle(request.symbol());
             toolCalls.add("web_data_yahoo_finance_business");
@@ -63,15 +66,17 @@ public class FinancialNewsOrchestrator {
             Map<String, Object> news = newsAgent.handle(request.symbol());
             toolCalls.add("search_engine");
             log.info("News retrieved for symbol {}: {}", request.symbol(), news);
-            ragKnowledgeService.ingestSearchResults(request.symbol(), news);
+            int storedNewsChunks = ragKnowledgeService.ingestSearchResults(
+                    request.symbol(), news, "brightdata-mcp", "search_engine");
+            log.info("Stored {} new news chunks for future RAG retrieval", storedNewsChunks);
 
             log.info("Risk request: {}", request.symbol());
             Map<String, Object> risk = riskAgent.handle(request.symbol());
             toolCalls.add("search_engine_batch");
             log.info("Risk retrieved for symbol {}: {}", request.symbol(), risk);
-            ragKnowledgeService.ingestSearchResults(request.symbol(), risk);
-
-            var retrievedChunks = ragKnowledgeService.retrieveTopChunks(request.symbol(), safeQuestion, 5);
+            int storedRiskChunks = ragKnowledgeService.ingestSearchResults(
+                    request.symbol(), risk, "brightdata-mcp", "search_engine_batch");
+            log.info("Stored {} new risk chunks for future RAG retrieval", storedRiskChunks);
 
             String llm = analysisAgent.analyze(request.symbol(), safeQuestion, market, news, risk, retrievedChunks);
             log.info("result of llm:{}", llm);
