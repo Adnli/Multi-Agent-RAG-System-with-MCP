@@ -55,17 +55,18 @@ public class FinancialNewsOrchestrator {
 
             List<KnowledgeChunk> docs = ragService.retrieve(request.symbol(), safeQuestion, 4);
 
+            log.info("Market data request: {}", request.symbol());
             Map<String, Object> market = marketDataAgent.handle(request.symbol());
-            toolCalls.add("search_engine");
             toolCalls.add("web_data_yahoo_finance_business");
             log.info("Market data retrieved for symbol {}: {}", request.symbol(), market);
 
+            log.info("News request: {}", request.symbol());
             Map<String, Object> news = newsAgent.handle(request.symbol());
-            toolCalls.add("discover");
-            toolCalls.add("search_engine_batch");
+            toolCalls.add("search_engine");
             log.info("News retrieved for symbol {}: {}", request.symbol(), news);
 
             String llm = analysisAgent.analyze(request.symbol(), safeQuestion, market, news, docs);
+            log.info("result of llm:{}", llm);
             Map<String, Object> llmJson = objectMapper.readValue(llm, new TypeReference<>() {});
 
             auditEventRepository.save(AuditEvent.of(request.userId(), "analysis", "symbol=" + request.symbol()));

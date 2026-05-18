@@ -12,9 +12,9 @@ public class NewsAgent {
     private final FinancialMcpClient mcp;
 
     public Map<String, Object> handle(String ticker) {
-        return Map.of(
-                "discover", mcp.callTool("discover", Map.of("query", ticker + " earnings guidance risk factors", "limit", 5)),
-                "pages", mcp.callTool("search_engine_batch", Map.of("queries", new String[]{ticker + " sec filing", ticker + " analyst downgrade"}, "engine", "google"))
-        );
+        return Map.of("search", mcp.callTool("search_engine", Map.of(
+                "query", ticker + " latest financial news earnings guidance stock",
+                "engine", "google")
+        ));
     }
 }

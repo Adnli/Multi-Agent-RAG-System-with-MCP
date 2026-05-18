@@ -1,9 +1,6 @@
 package com.example.finnews.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -20,6 +17,7 @@ public class AuditEvent {
     private Instant createdAt;
     private String userId;
     private String action;
+    @Column(columnDefinition = "text")
     private String detail;
 
     public static AuditEvent of(String userId, String action, String detail) {
